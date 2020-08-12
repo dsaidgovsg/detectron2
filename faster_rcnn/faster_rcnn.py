@@ -55,16 +55,19 @@ class Faster_RCNN(object):
         predictor = DefaultPredictor(self.cfg)
         outputs = predictor(frame)
         
-        # Output is XYXY_ABS - Mobius expects XYWH_ABS
+        # Output is XYXY_ABS - Mobius expects XYWH_ABS where XY is the bbox center (but BoxMode XYWH_ABS is top left corner)
         # Take note that Detectron2 model only outputs score for the best class
         pred_boxes = BoxMode.convert(outputs["instances"].get("pred_boxes").tensor, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
         pred_scores = outputs["instances"].get("scores")
         pred_classes = outputs["instances"].get("pred_classes")
         
-        # Mobius expects a list of [pred_class, pred_score, [X, Y, W, H]]
+        # Mobius expects a list of [pred_class, pred_score, [Xc, Yc, W, H]]
         outputs = []
         for i in range(len(pred_boxes)):
                 pred_box = pred_boxes[i]
+                # Convert to XY of bbox center
+                pred_box[0] += pred_box[2]/2.0
+                pred_box[1] += pred_box[3]/2.0
                 pred_score = pred_scores[i]
                 pred_class = pred_classes[i]
                 outputs.append([pred_class.tolist(),
