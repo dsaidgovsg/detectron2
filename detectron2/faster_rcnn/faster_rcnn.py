@@ -33,7 +33,10 @@ class Faster_RCNN(object):
         cfg.MODEL.WEIGHTS = weight_path
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
         cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
+        cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.45
 
+        self.predictor = DefaultPredictor(cfg)
         self.cfg = cfg
 
         with open(labels_path) as namesFH:
@@ -47,13 +50,9 @@ class Faster_RCNN(object):
     def detect(self, frame, thresh=0.5, nms=0.45):
         # Detectron2 does not seem to have hier_thresh
 
-        # Set up cfg before creating Predictor
-        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = thresh
-        self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = nms
 
         # DefaultPredictor takes in BGR image
-        predictor = DefaultPredictor(self.cfg)
-        outputs = predictor(frame)
+        outputs = self.predictor(frame)
         
         # Output is XYXY_ABS - Mobius expects XYWH_ABS where XY is the bbox center (but BoxMode XYWH_ABS is top left corner)
         # Take note that Detectron2 model only outputs score for the best class
